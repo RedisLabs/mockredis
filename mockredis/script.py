@@ -1,5 +1,6 @@
 import sys
 import threading
+from itertools import izip
 from mockredis.exceptions import ResponseError
 
 LuaLock = threading.Lock()
@@ -38,11 +39,16 @@ class Script(object):
         def _call(*call_args):
             # redis-py and native redis commands are mostly compatible argument
             # wise, but some exceptions need to be handled here:
-            if str(call_args[0]).lower() == 'lrem':
+            nrm_cmd = str(call_args[0]).lower()
+            if nrm_cmd == 'lrem':
                 response = client.call(
                     call_args[0], call_args[1],
                     call_args[3],  # "count", default is 0
                     call_args[2])
+            elif nrm_cmd == 'hmset':
+                # redis-py hmset takes key value pairs in a dictionary and not as a flat list of arguments.
+                call_iter = iter(call_args)
+                response = client.call(next(call_iter), next(call_iter), dict(izip(call_iter, call_iter)))
             else:
                 response = client.call(*call_args)
             return self._python_to_lua(response)
