@@ -24,7 +24,7 @@ class Script(object):
             if not client.script_exists(self.sha)[0]:
                 self.sha = client.script_load(self.script)
 
-            return self._execute_lua(keys, args, client)
+            return self._execute_lua([str(key) for key in keys], [str(arg) for arg in args], client)
 
     def _execute_lua(self, keys, args, client):
         """
