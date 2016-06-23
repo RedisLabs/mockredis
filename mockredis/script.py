@@ -53,7 +53,11 @@ class Script(object):
                 response = client.call(*call_args)
             return self._python_to_lua(response)
 
-        lua_globals.redis = {"call": _call}
+        lua_globals.redis = {"call": _call,
+                             #  TODO wrap _call with try to implement "pcall": _pcall,
+                             "status_reply": lambda status: self._python_to_lua({"ok": status}),
+                             "error_reply": lambda error: self._python_to_lua({"err": error})
+                             }
         return self._lua_to_python(lua.execute(self.script), return_status=True)
 
     @staticmethod
