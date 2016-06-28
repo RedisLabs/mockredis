@@ -240,6 +240,12 @@ class TestScript(object):
         itemType = script(keys=[LIST1], args=[0, -1])
         eq_('table', itemType)
 
+    def test_string_arguments(self):
+        script_content = "return type(KEYS[1]) .. type(KEYS[2]) .. type(ARGV[1]) .. type(ARGV[2])"
+        script = self.redis.register_script(script_content)
+        item_types = script(keys=[64, 'abc'], args=[123, [34,43]])
+        eq_('string'*4, item_types)
+
     def test_script_hgetall(self):
         myhash = {"k1": "v1"}
         self.redis.hmset("myhash", myhash)
