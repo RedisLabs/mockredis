@@ -1,3 +1,4 @@
+import logging
 import sys
 import threading
 try:
@@ -61,7 +62,12 @@ class Script(object):
         lua_globals.redis = {"call": _call,
                              #  TODO wrap _call with try to implement "pcall": _pcall,
                              "status_reply": lambda status: self._python_to_lua({"ok": status}),
-                             "error_reply": lambda error: self._python_to_lua({"err": error})
+                             "error_reply": lambda error: self._python_to_lua({"err": error}),
+                             "log": client._log,
+                             "LOG_DEBUG": logging.DEBUG,
+                             "LOG_VERBOSE": logging.INFO,
+                             "LOG_NOTICE": logging.WARNING,
+                             "LOG_WARNING": logging.ERROR
                              }
         return self._lua_to_python(lua.execute(self.script), return_status=True)
 

@@ -1551,6 +1551,9 @@ class MockRedis(object):
             value = value.encode('utf-8', 'strict')
         return value
 
+    def _log(self, level, msg):
+        pass
+
 
 def get_total_milliseconds(td):
     return int((td.days * 24 * 60 * 60 + td.seconds) * 1000 + td.microseconds / 1000.0)
