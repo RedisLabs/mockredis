@@ -251,6 +251,16 @@ class TestScript(object):
         ok_(isinstance(item, list))
         eq_(["k1", "v1"], item)
 
+    def test_script_hmset(self):
+        script_content = """
+        return redis.call('HMSET', KEYS[1], unpack(ARGV))
+        """
+        script = self.redis.register_script(script_content)
+        script_args = ['a', 1, 'b', '2', 3, 'c', 4, 5]
+        hash_key = "myhash"
+        script(keys=[hash_key], args=script_args)
+        eq_([str(val) for val in script_args[1::2]], self.redis.hmget(hash_key, script_args[0::2]))
+
     def test_evalsha(self):
         self.redis.lpush(LIST1, VAL1)
         script = LPOP_SCRIPT
