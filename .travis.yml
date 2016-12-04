@@ -8,3 +8,6 @@ python:
 - pypy3
 install: pip install .
 script: python setup.py nosetests
+branches:
+  only:
+  - master
