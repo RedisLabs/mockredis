@@ -9,6 +9,9 @@ VAL2 = "val2"
 VAL3 = "val3"
 VAL4 = "val4"
 
+OK_REPLY = "Good"
+ERR_REPLY = "Bad"
+
 LPOP_SCRIPT = "return redis.call('LPOP', KEYS[1])"
 
 bVAL1 = VAL1.encode('utf8')

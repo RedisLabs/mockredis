@@ -3,7 +3,7 @@ Test fixtures for mockredis using the WithRedis plugin.
 """
 from contextlib import contextmanager
 
-from nose.tools import assert_raises, raises
+from nose.tools import assert_raises, raises, assert_raises_regexp, make_decorator
 
 from mockredis.noseplugin import WithRedis
 
@@ -37,6 +37,21 @@ def raises_response_error(func):
     does not current depend on redis-py strictly.
     """
     return raises(WithRedis.ResponseError)(func)
+
+
+def raises_response_error_regex(regex):
+    """
+    Test decorator that handles ResponseError or its mock equivalent
+    (currently ValueError) and verify it's message.
+
+    mockredis does not currently raise redis-py's exceptions because it
+    does not current depend on redis-py strictly.
+    """
+    def real_decorator(func):
+        def assert_func(*arg, **kw):
+            return assert_raises_regexp(WithRedis.ResponseError, regex, func, *arg, **kw)
+        return make_decorator(func)(assert_func)
+    return real_decorator
 
 
 @contextmanager

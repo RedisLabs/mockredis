@@ -15,9 +15,9 @@ from mockredis.tests.test_constants import (
     LIST1, LIST2,
     SET1,
     VAL1, VAL2, VAL3, VAL4,
-    LPOP_SCRIPT
-)
-from mockredis.tests.fixtures import raises_response_error
+    LPOP_SCRIPT,
+    OK_REPLY, ERR_REPLY)
+from mockredis.tests.fixtures import raises_response_error, raises_response_error_regex
 
 
 if sys.version_info >= (3, 0):
@@ -386,6 +386,17 @@ class TestScript(object):
     @raises_response_error
     def test_lua_err_return(self):
         script_content = "return {err='ERROR Some message'}"
+        script = self.redis.register_script(script_content)
+        script()
+
+    def test_lua_status_reply(self):
+        script_content = "return redis.status_reply('{}')".format(OK_REPLY)
+        script = self.redis.register_script(script_content)
+        eq_(OK_REPLY, script())
+
+    @raises_response_error_regex(ERR_REPLY)
+    def test_lua_err_reply(self):
+        script_content = "return redis.error_reply('{}')".format(ERR_REPLY)
         script = self.redis.register_script(script_content)
         script()
 
