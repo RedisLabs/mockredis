@@ -186,7 +186,7 @@ class Script(object):
                 lua_table.insert(lua_dict, Script._python_to_lua(k))
                 lua_table.insert(lua_dict, Script._python_to_lua(v))
             return lua_dict
-        elif isinstance(pval, str):
+        elif isinstance(pval, basestring):
             # Python string --> Lua userdata
             return pval
         elif isinstance(pval, bool):
