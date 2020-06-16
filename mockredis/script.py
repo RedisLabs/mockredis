@@ -7,6 +7,9 @@ try:
 except ImportError:
     # Python 3
     izip = zip
+    basestring = str
+    long = int
+
 from mockredis.exceptions import ResponseError
 
 LuaLock = threading.Lock()

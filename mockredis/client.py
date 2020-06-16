@@ -10,6 +10,7 @@ import re
 import sys
 import time
 import fnmatch
+from future.builtins import bytes as newbytes
 
 from mockredis.clock import SystemClock
 from mockredis.lock import MockRedisLock
@@ -22,6 +23,7 @@ if sys.version_info >= (3, 0):
     long = int
     xrange = range
     basestring = str
+    unicode = str
     from functools import reduce
 
 
@@ -165,8 +167,15 @@ class MockRedis(object):
         regex = fnmatch.translate(pattern)
         regex = re.compile(re.sub(r'(^|[^\\])\.', r'\1[^/]', regex))
 
+        keys = []
+
         # Find every key that matches the pattern
-        return [key for key in self.redis.keys() if regex.match(key.decode('utf-8'))]
+        for key in self.redis.keys():
+            decoded_key = key if isinstance(key, unicode) else key.decode('utf-8')
+            if regex.match(decoded_key):
+                keys.append(key)
+
+        return keys
 
     def delete(self, *keys):
         """Emulate delete."""
@@ -1320,7 +1329,8 @@ class MockRedis(object):
 
     def script_load(self, script):
         """Emulate script_load"""
-        sha_digest = sha1(script.encode("utf-8")).hexdigest()
+        encoded_script = script if isinstance(script, bytes) else script.encode("utf-8")
+        sha_digest = sha1(encoded_script).hexdigest()
         self.shas[sha_digest] = script
         return sha_digest
 
@@ -1538,9 +1548,9 @@ class MockRedis(object):
         return True, float(score)
 
     def _encode(self, value):
-        "Return a bytestring representation of the value. Taken from redis-py connection.py"
-        if isinstance(value, bytes):
-            return value
+        "Return a bytestring representation of the value. Originally taken from redis-py connection.py"
+        if isinstance(value, (newbytes, bytes)):
+            return str(value)
         elif isinstance(value, (int, long)):
             value = str(value).encode('utf-8')
         elif isinstance(value, float):
@@ -1549,6 +1559,10 @@ class MockRedis(object):
             value = str(value).encode('utf-8')
         else:
             value = value.encode('utf-8', 'strict')
+
+        if isinstance(value, bytes):
+            value = value.decode('utf-8', 'strict')
+
         return value
 
     def _log(self, level, msg):
