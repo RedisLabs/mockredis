@@ -15,7 +15,8 @@ setup(name='mockredispy',
       license='Apache2',
       packages=find_packages(exclude=['*.tests']),
       setup_requires=[
-          'nose'
+          'nose',
+          'future'
       ],
       extras_require={
           'lua': ['lunatic-python-bugfix==1.1.1'],
