@@ -1079,27 +1079,10 @@ class MockRedis(object):
 
     # SORTED SET COMMANDS #
 
-    def zadd(self, name, *args, **kwargs):
+    def zadd(self, name, mappings):
         zset = self._get_zset(name, "ZADD", create=True)
-
-        pieces = []
-
-        # args
-        if len(args) % 2 != 0:
-            raise RedisError("ZADD requires an equal number of "
-                             "values and scores")
-        for i in xrange(len(args) // 2):
-            # interpretation of args order depends on whether Redis
-            # or StrictRedis is used
-            score = args[2 * i + (0 if self.strict else 1)]
-            member = args[2 * i + (1 if self.strict else 0)]
-            pieces.append((member, score))
-
-        # kwargs
-        pieces.extend(kwargs.items())
-
         insert_count = lambda member, score: 1 if zset.insert(self._encode(member), float(score)) else 0  # noqa
-        return sum((insert_count(member, score) for member, score in pieces))
+        return sum((insert_count(member, score) for member, score in mappings.iteritems()))
 
     def zcard(self, name):
         zset = self._get_zset(name, "ZCARD")

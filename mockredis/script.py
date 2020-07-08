@@ -55,6 +55,11 @@ class Script(object):
                 # redis-py hmset takes key value pairs in a dictionary and not as a flat list of arguments.
                 call_iter = iter(call_args)
                 response = client.call(next(call_iter), next(call_iter), dict(izip(call_iter, call_iter)))
+            elif nrm_cmd == 'zadd':
+                score_values = call_args[2:]
+                mappings = {score_values[index + 1]: score
+                            for index, score in enumerate(score_values) if index % 2 == 0}
+                response = client.call('zadd', call_args[1], mappings)
             else:
                 response = client.call(*call_args)
             return self._python_to_lua(response)
