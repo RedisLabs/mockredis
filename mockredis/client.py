@@ -1091,7 +1091,7 @@ class MockRedis(object):
     def zadd(self, name, mappings):
         zset = self._get_zset(name, "ZADD", create=True)
         insert_count = lambda member, score: 1 if zset.insert(self._encode(member), float(score)) else 0  # noqa
-        return sum((insert_count(member, score) for member, score in mappings.iteritems()))
+        return sum((insert_count(member, score) for member, score in list(mappings.items())))
 
     def zcard(self, name):
         zset = self._get_zset(name, "ZCARD")
