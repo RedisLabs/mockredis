@@ -1533,7 +1533,7 @@ class MockRedis(object):
     def _encode(self, value):
         "Return a bytestring representation of the value. Originally taken from redis-py connection.py"
         if isinstance(value, (newbytes, bytes)):
-            return str(value)
+            value = value
         elif isinstance(value, (int, long)):
             value = str(value).encode('utf-8')
         elif isinstance(value, float):
@@ -1543,10 +1543,7 @@ class MockRedis(object):
         else:
             value = value.encode('utf-8', 'strict')
 
-        if isinstance(value, bytes):
-            value = value.decode('utf-8', 'strict')
-
-        return value
+        return value.decode('utf-8', 'strict')
 
     def _log(self, level, msg):
         pass
