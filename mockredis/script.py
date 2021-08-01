@@ -190,7 +190,7 @@ class Script(object):
             #     in Lua returns: {k1, v1, k2, v2, k3, v3}
             lua_dict = lua.eval("{}")
             lua_table = lua.eval("table")
-            for k, v in pval.iteritems():
+            for k, v in list(pval.items()):
                 lua_table.insert(lua_dict, Script._python_to_lua(k))
                 lua_table.insert(lua_dict, Script._python_to_lua(v))
             return lua_dict

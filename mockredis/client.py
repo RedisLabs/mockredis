@@ -1091,7 +1091,7 @@ class MockRedis(object):
     def zadd(self, name, mappings):
         zset = self._get_zset(name, "ZADD", create=True)
         insert_count = lambda member, score: 1 if zset.insert(self._encode(member), float(score)) else 0  # noqa
-        return sum((insert_count(member, score) for member, score in mappings.iteritems()))
+        return sum((insert_count(member, score) for member, score in list(mappings.items())))
 
     def zcard(self, name):
         zset = self._get_zset(name, "ZCARD")
@@ -1533,7 +1533,7 @@ class MockRedis(object):
     def _encode(self, value):
         "Return a bytestring representation of the value. Originally taken from redis-py connection.py"
         if isinstance(value, (newbytes, bytes)):
-            return str(value)
+            value = value
         elif isinstance(value, (int, long)):
             value = str(value).encode('utf-8')
         elif isinstance(value, float):
@@ -1543,10 +1543,7 @@ class MockRedis(object):
         else:
             value = value.encode('utf-8', 'strict')
 
-        if isinstance(value, bytes):
-            value = value.decode('utf-8', 'strict')
-
-        return value
+        return value.decode('utf-8', 'strict')
 
     def _log(self, level, msg):
         pass
