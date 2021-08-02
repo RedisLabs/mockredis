@@ -42,6 +42,7 @@ class MockRedis(object):
                  load_lua_dependencies=True,
                  blocking_timeout=1000,
                  blocking_sleep_interval=0.01,
+                 decode_responses=False,
                  **kwargs):
         """
         Initialize as either StrictRedis or Redis.
@@ -61,6 +62,7 @@ class MockRedis(object):
         self.pubsub = defaultdict(list)
         # Dictionary from script to sha ''Script''
         self.shas = dict()
+        self.decode_responses = decode_responses
 
     @classmethod
     def from_url(cls, url, db=None, **kwargs):
@@ -1543,7 +1545,9 @@ class MockRedis(object):
         else:
             value = value.encode('utf-8', 'strict')
 
-        return value.decode('utf-8', 'strict')
+        if self.decode_responses:
+            return value.decode('utf-8', 'strict')
+        return value
 
     def _log(self, level, msg):
         pass
@@ -1559,7 +1563,8 @@ def mock_redis_client(**kwargs):
     can return a MockRedis object
     instead of a Redis object.
     """
-    return MockRedis()
+    return MockRedis(**kwargs)
+
 
 mock_redis_client.from_url = mock_redis_client
 
@@ -1570,6 +1575,7 @@ def mock_strict_redis_client(**kwargs):
     can return a MockRedis object
     instead of a StrictRedis object.
     """
-    return MockRedis(strict=True)
+    return MockRedis(strict=True, **kwargs)
+
 
 mock_strict_redis_client.from_url = mock_strict_redis_client
