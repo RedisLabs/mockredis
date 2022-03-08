@@ -1,5 +1,6 @@
 from __future__ import division
 from collections import defaultdict
+from collections.abc import ValuesView, KeysView, ItemsView
 from copy import deepcopy
 from itertools import chain
 from datetime import datetime, timedelta
@@ -175,7 +176,7 @@ class MockRedis(object):
         for key in self.redis.keys():
             decoded_key = key if isinstance(key, unicode) else key.decode('utf-8')
             if regex.match(decoded_key):
-                keys.append(key)
+                keys.append(decoded_key)
 
         return keys
 
@@ -301,11 +302,32 @@ class MockRedis(object):
     def dbsize(self):
         return len(self.redis.keys())
 
-    # String Functions #
+    def _decode(self, value):
+        if value is None:
+            return None
+
+        if self.decode_responses:
+            if isinstance(value, (list, tuple, set)):
+                value = type(value)(self._decode(v) for v in value)
+            # dict.keys()
+            elif isinstance(value, KeysView):
+                value = set(self._decode(v) for v in value)
+            # dict.values()
+            elif isinstance(value, ValuesView):
+                value = list(self._decode(v) for v in value)
+            # dict.items()
+            elif isinstance(value, ItemsView):
+                value = list((self._decode(k),self._decode(v)) for k,v in value)
+            elif isinstance(value, dict):
+                value = type(value)((self._decode(k), self._decode(v)) for k,v in value.items())
+            elif isinstance(value, (newbytes, bytes)):
+                value = value.decode('utf-8', 'strict')
+
+        return value
 
     def get(self, key):
         key = self._encode(key)
-        return self.redis.get(key)
+        return self._decode(self.redis.get(key))
 
     def __getitem__(self, name):
         """
@@ -518,12 +540,12 @@ class MockRedis(object):
         """Emulate hget."""
 
         redis_hash = self._get_hash(hashkey, 'HGET')
-        return redis_hash.get(self._encode(attribute))
+        return self._decode(redis_hash.get(self._encode(attribute)))
 
     def hgetall(self, hashkey):
         """Emulate hgetall."""
 
-        redis_hash = self._get_hash(hashkey, 'HGETALL')
+        redis_hash = self._get_hash(hashkey, 'HGETALL', decode=True)
         return dict(redis_hash)
 
     def hdel(self, hashkey, *keys):
@@ -559,7 +581,7 @@ class MockRedis(object):
 
         redis_hash = self._get_hash(hashkey, 'HMGET')
         attributes = self._list_or_args(keys, args)
-        return [redis_hash.get(self._encode(attribute)) for attribute in attributes]
+        return [self._decode(redis_hash.get(self._encode(attribute))) for attribute in attributes]
 
     def hset(self, hashkey, attribute, value):
         """Emulate hset."""
@@ -595,7 +617,7 @@ class MockRedis(object):
         """Shared hincrby and hincrbyfloat routine"""
         redis_hash = self._get_hash(hashkey, command, create=True)
         attribute = self._encode(attribute)
-        previous_value = type_(redis_hash.get(attribute, '0'))
+        previous_value = type_(self._decode(redis_hash.get(attribute, '0')))
         redis_hash[attribute] = self._encode(previous_value + increment)
         return type_(redis_hash[attribute])
 
@@ -603,13 +625,13 @@ class MockRedis(object):
         """Emulate hkeys."""
 
         redis_hash = self._get_hash(hashkey, 'HKEYS')
-        return redis_hash.keys()
+        return self._decode(redis_hash.keys())
 
     def hvals(self, hashkey):
         """Emulate hvals."""
 
         redis_hash = self._get_hash(hashkey, 'HVALS')
-        return redis_hash.values()
+        return self._decode(redis_hash.values())
 
     # List Functions #
 
@@ -617,7 +639,7 @@ class MockRedis(object):
         """Emulate lrange."""
         redis_list = self._get_list(key, 'LRANGE')
         start, stop = self._translate_range(len(redis_list), start, stop)
-        return redis_list[start:stop + 1]
+        return self._decode(redis_list[start:stop + 1])
 
     def lindex(self, key, index):
         """Emulate lindex."""
@@ -628,7 +650,7 @@ class MockRedis(object):
             return None
 
         try:
-            return redis_list[index]
+            return self._decode(redis_list[index])
         except (IndexError):
             # Redis returns nil if the index doesn't exist
             return None
@@ -668,7 +690,7 @@ class MockRedis(object):
         for key in keys:
             val = pop_func(key)
             if val:
-                return self._encode(key), val
+                return self._decode(key), self._decode(val)
         return None, None
 
     def blpop(self, keys, timeout=0):
@@ -715,7 +737,7 @@ class MockRedis(object):
             value = redis_list.pop()
             if len(redis_list) == 0:
                 self.delete(key)
-            return value
+            return self._decode(value)
         except (IndexError):
             # Redis returns nil if popping from an empty list
             return None
@@ -1025,7 +1047,7 @@ class MockRedis(object):
 
     def smembers(self, name):
         """Emulate smembers."""
-        return self._get_set(name, 'SMEMBERS').copy()
+        return self._get_set(name, 'SMEMBERS', decode=True).copy()
 
     def smove(self, src, dst, value):
         """Emulate smove."""
@@ -1050,11 +1072,11 @@ class MockRedis(object):
         redis_set.remove(member)
         if len(redis_set) == 0:
             self.delete(name)
-        return member
+        return self._decode(member)
 
     def srandmember(self, name, number=None):
         """Emulate srandmember."""
-        redis_set = self._get_set(name, 'SRANDMEMBER')
+        redis_set = self._get_set(name, 'SRANDMEMBER',decode=True)
         if not redis_set:
             return None if number is None else []
         if number is None:
@@ -1149,7 +1171,7 @@ class MockRedis(object):
 
         start, end = self._translate_range(len(zset), start, end)
 
-        func = self._range_func(withscores, score_cast_func)
+        func = self._range_func(withscores, score_cast_func, decode_value_func=self._decode)
         return [func(item) for item in zset.range(start, end, desc)]
 
     def zrangebyscore(self, name, min, max, start=None, num=None,
@@ -1162,7 +1184,7 @@ class MockRedis(object):
         if not zset:
             return []
 
-        func = self._range_func(withscores, score_cast_func)
+        func = self._range_func(withscores, score_cast_func, decode_value_func=self._decode)
         include_start, min = self._score_inclusive(min)
         include_end, max = self._score_inclusive(max)
         scorerange = zset.scorerange(min, max, start_inclusive=include_start, end_inclusive=include_end)  # noqa
@@ -1234,7 +1256,7 @@ class MockRedis(object):
         if not zset:
             return []
 
-        func = self._range_func(withscores, score_cast_func)
+        func = self._range_func(withscores, score_cast_func, decode_value_func=self._decode)
         include_start, min = self._score_inclusive(min)
         include_end, max = self._score_inclusive(max)
 
@@ -1420,40 +1442,46 @@ class MockRedis(object):
 
     # Internal #
 
-    def _get_list(self, key, operation, create=False):
+    def _get_list(self, key, operation, create=False, decode=False):
         """
         Get (and maybe create) a list by name.
         """
-        return self._get_by_type(key, operation, create, b'list', [])
+        return self._get_by_type(key, operation, create, b'list', [], decode=decode)
 
-    def _get_set(self, key, operation, create=False):
+    def _get_set(self, key, operation, create=False, decode=False):
         """
         Get (and maybe create) a set by name.
         """
-        return self._get_by_type(key, operation, create, b'set', set())
+        return self._get_by_type(key, operation, create, b'set', set(), decode=decode)
 
-    def _get_hash(self, name, operation, create=False):
+    def _get_hash(self, name, operation, create=False, decode=False):
         """
         Get (and maybe create) a hash by name.
         """
-        return self._get_by_type(name, operation, create, b'hash', {})
+        return self._get_by_type(name, operation, create, b'hash', {}, decode=decode)
 
-    def _get_zset(self, name, operation, create=False):
+    def _get_zset(self, name, operation, create=False, decode=False):
         """
         Get (and maybe create) a sorted set by name.
         """
-        return self._get_by_type(name, operation, create, b'zset', SortedSet(), return_default=False)  # noqa
+        return self._get_by_type(name, operation, create, b'zset', SortedSet(), return_default=False, decode=decode)  # noqa
 
-    def _get_by_type(self, key, operation, create, type_, default, return_default=True):
+    def _get_by_type(self, key, operation, create, type_, default, return_default=True, decode=False):
         """
         Get (and maybe create) a redis data structure by name and type.
         """
         key = self._encode(key)
         if self.type(key) in [type_, b'none']:
             if create:
-                return self.redis.setdefault(key, default)
+                val = self.redis.setdefault(key, default)
+                if decode:
+                    val = self._decode(val)
+                return val
             else:
-                return self.redis.get(key, default if return_default else None)
+                val = self.redis.get(key, default if return_default else None)
+                if decode:
+                    val = self._decode(val)
+                return val
 
         raise TypeError("{} requires a {}".format(operation, type_))
 
@@ -1479,14 +1507,14 @@ class MockRedis(object):
             return 0, 0
         return min(start, len_), num
 
-    def _range_func(self, withscores, score_cast_func):
+    def _range_func(self, withscores, score_cast_func, decode_value_func=lambda x: x):
         """
         Return a suitable function from (score, member)
         """
         if withscores:
-            return lambda score_member: (score_member[1], score_cast_func(self._encode(score_member[0])))  # noqa
+            return lambda score_member: (decode_value_func(score_member[1]), score_cast_func(self._encode(score_member[0])))  # noqa
         else:
-            return lambda score_member: score_member[1]
+            return lambda score_member: decode_value_func(score_member[1])
 
     def _aggregate_func(self, aggregate):
         """
@@ -1545,8 +1573,6 @@ class MockRedis(object):
         else:
             value = value.encode('utf-8', 'strict')
 
-        if self.decode_responses:
-            return value.decode('utf-8', 'strict')
         return value
 
     def _log(self, level, msg):
