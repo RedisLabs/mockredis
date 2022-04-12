@@ -6,7 +6,7 @@ try:
     # Prefer actual exceptions to defining our own, so code that swaps
     # in implementations does not have to swap in different exception
     # classes.
-    from redis.exceptions import RedisError, ResponseError, WatchError
+    from redis.exceptions import RedisError, ResponseError, WatchError, DataError
 except ImportError:
     class RedisError(Exception):
         pass
@@ -15,4 +15,7 @@ except ImportError:
         pass
 
     class WatchError(RedisError):
+        pass
+
+    class DataError(RedisError):
         pass
