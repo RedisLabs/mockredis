@@ -583,14 +583,26 @@ class MockRedis(object):
         attributes = self._list_or_args(keys, args)
         return [self._decode(redis_hash.get(self._encode(attribute))) for attribute in attributes]
 
-    def hset(self, hashkey, attribute, value):
+    def hset(self, hashkey, attribute=None, value=None, mapping=None):
         """Emulate hset."""
+        if attribute is None and not mapping:
+            raise DataError("'hset' with no key value pairs")
 
         redis_hash = self._get_hash(hashkey, 'HSET', create=True)
-        attribute = self._encode(attribute)
-        attribute_present = attribute in redis_hash
-        redis_hash[attribute] = self._encode(value)
-        return long(0) if attribute_present else long(1)
+        if attribute is not None:
+            attribute = self._encode(attribute)
+            attribute_present = attribute in redis_hash
+            redis_hash[attribute] = self._encode(value)
+            return long(0) if attribute_present else long(1)
+
+        elif mapping:
+            created = long(0)
+            for attr, val in mapping.items():
+                attr = self._encode(attr)
+                attribute_present = attr in redis_hash
+                redis_hash[attr] = self._encode(val)
+                created += 0 if attribute_present else 1
+            return created
 
     def hsetnx(self, hashkey, attribute, value):
         """Emulate hsetnx."""
