@@ -658,7 +658,7 @@ class MockRedis(object):
         values = list(self.lrange(name, 0, -1))
         if name not in values:
             return None
-        return value.index(value)
+        return values.index(value)
 
     def lindex(self, key, index):
         """Emulate lindex."""
@@ -768,6 +768,7 @@ class MockRedis(object):
 
         # Creates the list at this key if it doesn't exist, and appends args to it
         redis_list.extend(map(self._encode, args))
+        return len(args)
 
     def lrem(self, key, value, count=0):
         """Emulate lrem."""
