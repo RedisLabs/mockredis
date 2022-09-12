@@ -655,7 +655,10 @@ class MockRedis(object):
 
     def lpos(self, name, value):
         """Emulate lpos. (naive implementation)"""
-        return list(self.lrange(name, 0, -1)).index(value)
+        values = list(self.lrange(name, 0, -1))
+        if name not in values:
+            return None
+        return value.index(value)
 
     def lindex(self, key, index):
         """Emulate lindex."""
