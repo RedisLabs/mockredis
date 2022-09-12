@@ -744,6 +744,7 @@ class MockRedis(object):
         args_reversed = [self._encode(arg) for arg in args]
         args_reversed.reverse()
         self.redis[self._encode(key)] = args_reversed + redis_list
+        return len(args)
 
     def rpop(self, key):
         """Emulate lpop."""
