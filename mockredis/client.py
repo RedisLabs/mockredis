@@ -653,6 +653,10 @@ class MockRedis(object):
         start, stop = self._translate_range(len(redis_list), start, stop)
         return self._decode(redis_list[start:stop + 1])
 
+    def lpos(self, name, value):
+        """Emulate lpos. (naive implementation)"""
+        return list(self.lrange(name, 0, -1)).index(value)
+
     def lindex(self, key, index):
         """Emulate lindex."""
 
