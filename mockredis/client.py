@@ -767,6 +767,7 @@ class MockRedis(object):
 
         # Creates the list at this key if it doesn't exist, and appends args to it
         redis_list.extend(map(self._encode, args))
+        return len(args)
 
     def lrem(self, key, value, count=0):
         """Emulate lrem."""
