@@ -19,6 +19,7 @@ from mockredis.exceptions import RedisError, ResponseError, WatchError
 from mockredis.pipeline import MockRedisPipeline
 from mockredis.script import Script
 from mockredis.sortedset import SortedSet
+from mockredis.pubsub import Pubsub
 
 if sys.version_info >= (3, 0):
     long = int
@@ -59,8 +60,7 @@ class MockRedis(object):
         self.redis = defaultdict(dict)
         self.redis_config = defaultdict(dict)
         self.timeouts = defaultdict(dict)
-        # The 'PubSub' store
-        self.pubsub = defaultdict(list)
+        self._pubsub = None
         # Dictionary from script to sha ''Script''
         self.shas = dict()
         self.decode_responses = decode_responses
@@ -282,7 +282,7 @@ class MockRedis(object):
 
     def flushdb(self):
         self.redis.clear()
-        self.pubsub.clear()
+        self.pubsub().clear()
         self.timeouts.clear()
 
     def rename(self, old_key, new_key):
@@ -744,6 +744,7 @@ class MockRedis(object):
         args_reversed = [self._encode(arg) for arg in args]
         args_reversed.reverse()
         self.redis[self._encode(key)] = args_reversed + redis_list
+        return len(args)
 
     def rpop(self, key):
         """Emulate lpop."""
@@ -1457,8 +1458,14 @@ class MockRedis(object):
 
     # PubSub commands #
 
+    def pubsub(self, **kwargs):
+        """ Return a mocked 'PubSub' object """
+        if not self._pubsub:
+            self._pubsub = Pubsub(self, **kwargs)
+        return self._pubsub
+
     def publish(self, channel, message):
-        self.pubsub[channel].append(message)
+        self.pubsub().publish(channel, message)
 
     # Internal #
 
