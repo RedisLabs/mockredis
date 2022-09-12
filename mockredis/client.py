@@ -658,7 +658,7 @@ class MockRedis(object):
         values = list(self.lrange(name, 0, -1))
         if name not in values:
             return None
-        return value.index(value)
+        return values.index(value)
 
     def lindex(self, key, index):
         """Emulate lindex."""
