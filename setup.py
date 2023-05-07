@@ -16,7 +16,6 @@ setup(name='mockredispy',
       packages=find_packages(exclude=['*.tests']),
       setup_requires=[
           'nose',
-          'future'
       ],
       extras_require={
           'lua': ['lunatic-python-bugfix==1.1.1'],

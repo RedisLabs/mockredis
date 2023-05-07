@@ -11,7 +11,6 @@ import re
 import sys
 import time
 import fnmatch
-from future.builtins import bytes as newbytes
 
 from mockredis.clock import SystemClock
 from mockredis.lock import MockRedisLock
@@ -320,7 +319,7 @@ class MockRedis(object):
                 value = list((self._decode(k),self._decode(v)) for k,v in value)
             elif isinstance(value, dict):
                 value = type(value)((self._decode(k), self._decode(v)) for k,v in value.items())
-            elif isinstance(value, (newbytes, bytes)):
+            elif isinstance(value, bytes):
                 value = value.decode('utf-8', 'strict')
 
         return value
@@ -1589,7 +1588,7 @@ class MockRedis(object):
 
     def _encode(self, value):
         "Return a bytestring representation of the value. Originally taken from redis-py connection.py"
-        if isinstance(value, (newbytes, bytes)):
+        if isinstance(value, bytes):
             value = value
         elif isinstance(value, (int, long)):
             value = str(value).encode('utf-8')
