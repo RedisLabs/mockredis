@@ -17,6 +17,7 @@ from mockredis.lock import MockRedisLock
 from mockredis.exceptions import RedisError, ResponseError, WatchError
 from mockredis.pipeline import MockRedisPipeline
 from mockredis.script import Script
+from mockredis.search import Search
 from mockredis.sortedset import SortedSet
 from mockredis.pubsub import Pubsub
 
@@ -63,6 +64,7 @@ class MockRedis(object):
         # Dictionary from script to sha ''Script''
         self.shas = dict()
         self.decode_responses = decode_responses
+        self.search_indexes = {}
 
     @classmethod
     def from_url(cls, url, db=None, **kwargs):
@@ -135,6 +137,18 @@ class MockRedis(object):
         """Emulate the execute method. All piped commands are executed immediately
         in this mock, so this is a no-op."""
         pass
+
+    def execute_command(self, cmd):
+        """For this to properly emulate the execute_command method,
+        we would need to store a dictionary of valid commands and their
+        corresponding methods. For now, we'll consider this a no-op.
+        """
+        pass
+
+    def ft(self, index_name = "idx"):
+        """ft() is a barebones emulation of a Search Module client"""
+        mock_idx = Search(index_name, self.search_indexes)
+        return mock_idx
 
     # Keys Functions #
 
