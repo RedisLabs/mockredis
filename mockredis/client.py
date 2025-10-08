@@ -139,7 +139,10 @@ class MockRedis(object):
         pass
 
     def execute_command(self, cmd):
-        """no-op. Same as execute()"""
+        """For this to properly emulate the execute_command method,
+        we would need to store a dictionary of valid commands and their
+        corresponding methods. For now, we'll consider this a no-op.
+        """
         pass
 
     def ft(self, index_name = "idx"):
