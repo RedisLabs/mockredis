@@ -15,4 +15,3 @@ class Search(object):
             raise ResponseError()
         
         self.search_indexes[self.index_name] = True
-        return
